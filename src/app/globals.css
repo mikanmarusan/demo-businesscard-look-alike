@@ -1,0 +1,74 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-sand-50: #faf9f7;
+  --color-sand-100: #f5f3f0;
+  --color-sand-200: #e8e4df;
+  --color-sand-300: #d4cec6;
+  --color-sand-400: #b0a899;
+  --color-sand-500: #8c8272;
+  --color-sand-600: #6b6254;
+  --color-sand-700: #504a3f;
+  --color-sand-800: #37332c;
+  --color-sand-900: #1e1c18;
+
+  --color-ink: #1a1814;
+  --color-ink-light: #2e2b25;
+
+  --color-accent: #c4622a;
+  --color-accent-light: #d97a45;
+  --color-accent-muted: rgba(196, 98, 42, 0.08);
+
+  --font-display: "Instrument Serif", "Noto Serif JP", Georgia, serif;
+  --font-body: "DM Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", monospace;
+}
+
+body {
+  background: var(--color-sand-50);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.6;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out both;
+}
+
+.animate-fade-up-delay-1 {
+  animation: fade-up 0.5s ease-out 0.1s both;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.5s ease-out 0.2s both;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s ease-in-out infinite;
+}

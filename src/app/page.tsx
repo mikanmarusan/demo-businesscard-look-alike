@@ -7,8 +7,15 @@ import OcrProgress from "@/components/OcrProgress";
 import { recognizeCard } from "@/lib/ocr";
 import {
   sampleTextAndBgColor,
+  sampleCardBackgroundColor,
   getImageDataFromImage,
 } from "@/lib/colorSampler";
+import {
+  estimateFontSize,
+  inferFontFamily,
+  inferFontWeight,
+} from "@/lib/fontSizeEstimator";
+import { normalizeCjkSpaces } from "@/lib/textNormalizer";
 import { DetectedText, AppStep } from "@/lib/types";
 
 const CardEditor = dynamic(() => import("@/components/CardEditor"), {
@@ -38,9 +45,25 @@ export default function Home() {
       const img = await loadImage(dataUrl);
       const imageData = getImageDataFromImage(img);
 
-      const texts: DetectedText[] = (data.lines || [])
-        .filter((line) => line.text.trim().length > 0)
-        .map((line, i) => {
+      // Ensure fonts are loaded before measuring text
+      await document.fonts.ready;
+
+      const filteredLines = (data.lines || []).filter(
+        (line) => line.text.trim().length > 0
+      );
+
+      // Collect all text bboxes for background exclusion
+      const bboxes = filteredLines.map((line) => ({
+        x0: line.bbox.x0,
+        y0: line.bbox.y0,
+        x1: line.bbox.x1,
+        y1: line.bbox.y1,
+      }));
+
+      // Sample a single background color from non-text regions
+      const cardBgColor = sampleCardBackgroundColor(imageData, bboxes);
+
+      const texts: DetectedText[] = filteredLines.map((line, i) => {
           const bbox = {
             x0: line.bbox.x0,
             y0: line.bbox.y0,
@@ -48,21 +71,30 @@ export default function Home() {
             y1: line.bbox.y1,
           };
 
-          const { textColor, bgColor } = sampleTextAndBgColor(
+          const { textColor } = sampleTextAndBgColor(
             imageData,
             bbox
           );
 
-          const fontSize = (bbox.y1 - bbox.y0) * 0.85;
+          const normalizedText = normalizeCjkSpaces(line.text.trim());
+          const fontFamily = inferFontFamily(line.words);
+          const fontWeight = inferFontWeight(line.words);
+          const fontSize = estimateFontSize(
+            normalizedText,
+            bbox,
+            fontFamily,
+            fontWeight
+          );
 
           return {
             id: `text-${i}`,
-            text: line.text.trim(),
+            text: normalizedText,
             bbox,
             fontSize,
             textColor,
-            bgColor,
-            fontFamily: "sans-serif",
+            bgColor: cardBgColor,
+            fontFamily,
+            fontWeight,
             confidence: line.confidence,
           };
         });

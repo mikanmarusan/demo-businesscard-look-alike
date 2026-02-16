@@ -18,6 +18,8 @@ interface Props {
   detectedTexts: DetectedText[];
 }
 
+const INPAINT_MARGIN = 4;
+
 const ALLOWED_FONTS = new Set([
   "Noto Sans JP",
   "Noto Serif JP",
@@ -86,7 +88,35 @@ export default function CardEditor({ imageUrl, detectedTexts }: Props) {
         height: img.naturalHeight,
       });
 
-      const fabricImg = new fabric.FabricImage(img, {
+      // Create cleaned background: original image with text areas inpainted
+      const offscreen = document.createElement("canvas");
+      offscreen.width = img.naturalWidth;
+      offscreen.height = img.naturalHeight;
+      const offCtx = offscreen.getContext("2d")!;
+      offCtx.drawImage(img, 0, 0);
+
+      // Inpaint each text bbox by stretching a nearby background strip
+      const stripH = 2;
+      detectedTexts.forEach((dt) => {
+        const x = Math.max(0, dt.bbox.x0 - INPAINT_MARGIN);
+        const right = Math.min(img.naturalWidth, dt.bbox.x1 + INPAINT_MARGIN);
+        const y = Math.max(0, dt.bbox.y0 - INPAINT_MARGIN);
+        const bottom = Math.min(img.naturalHeight, dt.bbox.y1 + INPAINT_MARGIN);
+        const w = right - x;
+        const h = bottom - y;
+
+        // Pick a strip from above or below the bbox
+        let srcY: number;
+        if (y >= stripH) {
+          srcY = y - stripH;
+        } else {
+          srcY = Math.min(bottom, img.naturalHeight - stripH);
+        }
+
+        offCtx.drawImage(img, x, srcY, w, stripH, x, y, w, h);
+      });
+
+      const fabricImg = new fabric.FabricImage(offscreen, {
         left: 0,
         top: 0,
         selectable: false,
@@ -95,24 +125,13 @@ export default function CardEditor({ imageUrl, detectedTexts }: Props) {
       canvas.add(fabricImg);
 
       detectedTexts.forEach((dt) => {
-        const rect = new fabric.Rect({
-          left: dt.bbox.x0,
-          top: dt.bbox.y0,
-          width: dt.bbox.x1 - dt.bbox.x0,
-          height: dt.bbox.y1 - dt.bbox.y0,
-          fill: dt.bgColor,
-          selectable: false,
-          evented: false,
-        });
-        canvas.add(rect);
-
         const text = new fabric.IText(dt.text, {
           left: dt.bbox.x0,
           top: dt.bbox.y0,
           fontSize: dt.fontSize,
           fill: dt.textColor,
           fontFamily: dt.fontFamily,
-          fontWeight: "normal",
+          fontWeight: dt.fontWeight || "normal",
         });
         canvas.add(text);
       });
@@ -133,6 +152,35 @@ export default function CardEditor({ imageUrl, detectedTexts }: Props) {
       fabricRef.current = null;
     };
   }, [imageUrl, detectedTexts, updateSelectedProps]);
+
+  const handleDeleteSelected = useCallback(() => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const active = canvas.getActiveObject();
+    if (!active || !(active instanceof fabric.IText)) return;
+
+    canvas.remove(active);
+    canvas.discardActiveObject();
+    canvas.renderAll();
+    setSelectedProps(null);
+  }, []);
+
+  // Keyboard shortcut: Delete/Backspace removes selected IText (when not editing)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Delete" && e.key !== "Backspace") return;
+      const canvas = fabricRef.current;
+      if (!canvas) return;
+      const active = canvas.getActiveObject();
+      if (active instanceof fabric.IText && !active.isEditing) {
+        e.preventDefault();
+        handleDeleteSelected();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleDeleteSelected]);
 
   const handlePropertyChange = useCallback(
     (props: Partial<TextProperties>) => {
@@ -219,6 +267,7 @@ export default function CardEditor({ imageUrl, detectedTexts }: Props) {
         <TextPropertyPanel
           selected={selectedProps}
           onChange={handlePropertyChange}
+          onDelete={handleDeleteSelected}
         />
       </div>
     </div>

@@ -11,6 +11,7 @@ export interface DetectedText {
   textColor: string;
   bgColor: string;
   fontFamily: string;
+  fontWeight: string;
   confidence: number;
 }
 

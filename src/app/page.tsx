@@ -9,6 +9,12 @@ import {
   sampleTextAndBgColor,
   getImageDataFromImage,
 } from "@/lib/colorSampler";
+import {
+  estimateFontSize,
+  inferFontFamily,
+  inferFontWeight,
+} from "@/lib/fontSizeEstimator";
+import { normalizeCjkSpaces } from "@/lib/textNormalizer";
 import { DetectedText, AppStep } from "@/lib/types";
 
 const CardEditor = dynamic(() => import("@/components/CardEditor"), {
@@ -38,6 +44,9 @@ export default function Home() {
       const img = await loadImage(dataUrl);
       const imageData = getImageDataFromImage(img);
 
+      // Ensure fonts are loaded before measuring text
+      await document.fonts.ready;
+
       const texts: DetectedText[] = (data.lines || [])
         .filter((line) => line.text.trim().length > 0)
         .map((line, i) => {
@@ -53,16 +62,25 @@ export default function Home() {
             bbox
           );
 
-          const fontSize = (bbox.y1 - bbox.y0) * 0.85;
+          const normalizedText = normalizeCjkSpaces(line.text.trim());
+          const fontFamily = inferFontFamily(line.words);
+          const fontWeight = inferFontWeight(line.words);
+          const fontSize = estimateFontSize(
+            normalizedText,
+            bbox,
+            fontFamily,
+            fontWeight
+          );
 
           return {
             id: `text-${i}`,
-            text: line.text.trim(),
+            text: normalizedText,
             bbox,
             fontSize,
             textColor,
             bgColor,
-            fontFamily: "sans-serif",
+            fontFamily,
+            fontWeight,
             confidence: line.confidence,
           };
         });

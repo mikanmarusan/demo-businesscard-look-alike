@@ -112,7 +112,7 @@ export default function CardEditor({ imageUrl, detectedTexts }: Props) {
           fontSize: dt.fontSize,
           fill: dt.textColor,
           fontFamily: dt.fontFamily,
-          fontWeight: "normal",
+          fontWeight: dt.fontWeight || "normal",
         });
         canvas.add(text);
       });

@@ -7,6 +7,7 @@ import OcrProgress from "@/components/OcrProgress";
 import { recognizeCard } from "@/lib/ocr";
 import {
   sampleTextAndBgColor,
+  sampleCardBackgroundColor,
   getImageDataFromImage,
 } from "@/lib/colorSampler";
 import {
@@ -47,9 +48,22 @@ export default function Home() {
       // Ensure fonts are loaded before measuring text
       await document.fonts.ready;
 
-      const texts: DetectedText[] = (data.lines || [])
-        .filter((line) => line.text.trim().length > 0)
-        .map((line, i) => {
+      const filteredLines = (data.lines || []).filter(
+        (line) => line.text.trim().length > 0
+      );
+
+      // Collect all text bboxes for background exclusion
+      const bboxes = filteredLines.map((line) => ({
+        x0: line.bbox.x0,
+        y0: line.bbox.y0,
+        x1: line.bbox.x1,
+        y1: line.bbox.y1,
+      }));
+
+      // Sample a single background color from non-text regions
+      const cardBgColor = sampleCardBackgroundColor(imageData, bboxes);
+
+      const texts: DetectedText[] = filteredLines.map((line, i) => {
           const bbox = {
             x0: line.bbox.x0,
             y0: line.bbox.y0,
@@ -57,7 +71,7 @@ export default function Home() {
             y1: line.bbox.y1,
           };
 
-          const { textColor, bgColor } = sampleTextAndBgColor(
+          const { textColor } = sampleTextAndBgColor(
             imageData,
             bbox
           );
@@ -78,7 +92,7 @@ export default function Home() {
             bbox,
             fontSize,
             textColor,
-            bgColor,
+            bgColor: cardBgColor,
             fontFamily,
             fontWeight,
             confidence: line.confidence,

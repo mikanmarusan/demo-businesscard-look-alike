@@ -229,6 +229,77 @@ export function sampleTextAndBgColor(
 }
 
 /**
+ * Sample a single representative background color for the entire card.
+ * 1. Grid-sample from the inner 90% of the image (exclude scan borders)
+ * 2. Exclude points inside text bboxes
+ * 3. Find the medoid to identify the background cluster center
+ * 4. Average only pixels within Delta-E 15 of the medoid (reject outliers)
+ * This two-pass approach produces a smooth color that blends with JPEG noise.
+ */
+export function sampleCardBackgroundColor(
+  imageData: ImageData,
+  textBboxes: { x0: number; y0: number; x1: number; y1: number }[]
+): string {
+  const { width, height, data } = imageData;
+
+  // Exclude outer 5% to avoid scan/camera borders
+  const marginX = Math.floor(width * 0.05);
+  const marginY = Math.floor(height * 0.05);
+  const innerW = width - marginX * 2;
+  const innerH = height - marginY * 2;
+
+  const gridSize = 25;
+  const colors: RGB[] = [];
+
+  for (let gy = 0; gy < gridSize; gy++) {
+    for (let gx = 0; gx < gridSize; gx++) {
+      const x = marginX + Math.floor(((gx + 0.5) / gridSize) * innerW);
+      const y = marginY + Math.floor(((gy + 0.5) / gridSize) * innerH);
+
+      if (x < 0 || x >= width || y < 0 || y >= height) continue;
+
+      // Skip points inside any text bbox
+      const insideBbox = textBboxes.some(
+        (b) => x >= b.x0 && x <= b.x1 && y >= b.y0 && y <= b.y1
+      );
+      if (insideBbox) continue;
+
+      colors.push(getPixel(data, width, x, y));
+    }
+  }
+
+  if (colors.length === 0) {
+    return "#ffffff";
+  }
+
+  // Pass 1: find the medoid (cluster center of the background)
+  const center = medoidColor(colors);
+  const centerLab = rgbToLab(center);
+
+  // Pass 2: average only pixels close to the medoid (Delta-E < 15)
+  const OUTLIER_THRESHOLD = 15;
+  let rSum = 0, gSum = 0, bSum = 0, count = 0;
+  for (const c of colors) {
+    if (deltaE(centerLab, rgbToLab(c)) < OUTLIER_THRESHOLD) {
+      rSum += c.r;
+      gSum += c.g;
+      bSum += c.b;
+      count++;
+    }
+  }
+
+  if (count === 0) {
+    return rgbToHex(center);
+  }
+
+  return rgbToHex({
+    r: Math.round(rSum / count),
+    g: Math.round(gSum / count),
+    b: Math.round(bSum / count),
+  });
+}
+
+/**
  * Get ImageData from a loaded image element using canvas.
  */
 export function getImageDataFromImage(img: HTMLImageElement): ImageData {

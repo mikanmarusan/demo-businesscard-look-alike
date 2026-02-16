@@ -11,6 +11,7 @@ interface TextProperties {
 interface Props {
   selected: TextProperties | null;
   onChange: (props: Partial<TextProperties>) => void;
+  onDelete?: () => void;
 }
 
 const FONT_OPTIONS = [
@@ -21,7 +22,7 @@ const FONT_OPTIONS = [
   "monospace",
 ];
 
-export default function TextPropertyPanel({ selected, onChange }: Props) {
+export default function TextPropertyPanel({ selected, onChange, onDelete }: Props) {
   if (!selected) {
     return (
       <div className="rounded-xl border border-sand-200 bg-white/60 p-5">
@@ -152,6 +153,18 @@ export default function TextPropertyPanel({ selected, onChange }: Props) {
             </button>
           </div>
         </div>
+
+        {/* Delete */}
+        {onDelete && (
+          <div className="pt-2 border-t border-sand-100">
+            <button
+              onClick={onDelete}
+              className="w-full rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-500 hover:bg-red-50 hover:border-red-300 transition-all"
+            >
+              Delete text
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

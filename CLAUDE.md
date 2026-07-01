@@ -36,3 +36,8 @@ All processing is client-side (no server API needed).
 - `src/lib/ocr.ts` — Tesseract.js wrapper
 - `src/lib/colorSampler.ts` — Background/text color sampling via Canvas API
 - `src/lib/types.ts` — TypeScript type definitions
+
+## Lessons
+
+- Node helper/verification scripts must be robust: anchor file paths to the script's own location (`fileURLToPath(import.meta.url)`) so they run from any cwd, pin `tsc` emit with `--rootDir`, and clean up `mkdtemp` dirs in a `try/finally` (defer `process.exit` until after it). Resolve the project's own `tsc` via `require.resolve("typescript/bin/tsc")`, never `npx tsc`.
+- Keep new scripts eslint-clean: use `if/else`, not expression-statement ternaries (`cond ? a() : b();`), which trip `no-unused-expressions`.

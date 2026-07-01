@@ -9,7 +9,6 @@ export interface DetectedText {
   };
   fontSize: number;
   textColor: string;
-  bgColor: string;
   fontFamily: string;
   fontWeight: string;
 }

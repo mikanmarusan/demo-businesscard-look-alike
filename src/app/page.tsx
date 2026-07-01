@@ -95,7 +95,6 @@ export default function Home() {
             bgColor: cardBgColor,
             fontFamily,
             fontWeight,
-            confidence: line.confidence,
           };
         });
 

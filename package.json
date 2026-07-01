@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "verify:colors": "node scripts/verify-color-parity.mjs"
+    "verify:colors": "node scripts/verify-color-parity.mjs",
+    "verify": "npm run build && npm run lint && tsc --noEmit && npm run verify:colors"
   },
   "dependencies": {
     "fabric": "^6.9.1",

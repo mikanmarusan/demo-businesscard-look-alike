@@ -12,7 +12,6 @@ export interface DetectedText {
   bgColor: string;
   fontFamily: string;
   fontWeight: string;
-  confidence: number;
 }
 
 export type AppStep = "upload" | "processing" | "editor";

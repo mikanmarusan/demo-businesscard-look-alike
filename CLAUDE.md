@@ -41,3 +41,4 @@ All processing is client-side (no server API needed).
 
 - Node helper/verification scripts must be robust: anchor file paths to the script's own location (`fileURLToPath(import.meta.url)`) so they run from any cwd, pin `tsc` emit with `--rootDir`, and clean up `mkdtemp` dirs in a `try/finally` (defer `process.exit` until after it). Resolve the project's own `tsc` via `require.resolve("typescript/bin/tsc")`, never `npx tsc`.
 - Keep new scripts eslint-clean: use `if/else`, not expression-statement ternaries (`cond ? a() : b();`), which trip `no-unused-expressions`.
+- When removing a field or return value, also remove its now-orphaned producers (arrays populated only to compute it, upstream accumulation loops). A write-only array mutated via `.push()` is not flagged by eslint `no-unused-vars`, so it survives as silent dead code; trace and delete the whole cascade.

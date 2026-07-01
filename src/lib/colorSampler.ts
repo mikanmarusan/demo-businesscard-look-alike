@@ -161,19 +161,18 @@ function sampleBorderColor(
 export function sampleTextAndBgColor(
   imageData: ImageData,
   bbox: { x0: number; y0: number; x1: number; y1: number }
-): { textColor: string; bgColor: string } {
+): { textColor: string } {
   const { width, height, data } = imageData;
 
   // Phase 1: Determine background color from border pixels
   const borderBg = sampleBorderColor(imageData, bbox);
   if (!borderBg) {
-    return { textColor: "#000000", bgColor: "#ffffff" };
+    return { textColor: "#000000" };
   }
   const borderBgLab = rgbToLab(borderBg);
 
   // Phase 2: Sample pixels inside the bbox
   const step = 2;
-  const bgCluster: RGB[] = [];
   const textCluster: RGB[] = [];
   // Delta-E < 20 is "small perceived difference" in CIE76; text on business
   // cards typically has Delta-E > 40 against the background.
@@ -196,10 +195,8 @@ export function sampleTextAndBgColor(
       const pxLab = rgbToLab(px);
       const dist = deltaE(borderBgLab, pxLab);
 
-      // Phase 3: Classify by Delta-E distance
-      if (dist < DELTA_E_THRESHOLD) {
-        bgCluster.push(px);
-      } else {
+      // Phase 3: Keep only text pixels (Delta-E far from the background)
+      if (dist >= DELTA_E_THRESHOLD) {
         textCluster.push(px);
       }
 
@@ -211,9 +208,7 @@ export function sampleTextAndBgColor(
     }
   }
 
-  // Phase 4: Determine representative colors
-  const bgColor = rgbToHex(bgCluster.length > 0 ? medoidColor(bgCluster) : borderBg);
-
+  // Phase 4: Determine representative text color
   let textColor: string;
   if (textCluster.length >= 3) {
     textColor = rgbToHex(medoidColor(textCluster));
@@ -225,7 +220,7 @@ export function sampleTextAndBgColor(
     textColor = luminance(borderBg) > 128 ? "#000000" : "#ffffff";
   }
 
-  return { textColor, bgColor };
+  return { textColor };
 }
 
 /**

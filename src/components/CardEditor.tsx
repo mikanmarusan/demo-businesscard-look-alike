@@ -119,6 +119,8 @@ export default function CardEditor({ imageUrl, detectedTexts }: Props) {
       const fabricImg = new fabric.FabricImage(offscreen, {
         left: 0,
         top: 0,
+        originX: "left",
+        originY: "top",
         selectable: false,
         evented: false,
       });
@@ -128,6 +130,8 @@ export default function CardEditor({ imageUrl, detectedTexts }: Props) {
         const text = new fabric.IText(dt.text, {
           left: dt.bbox.x0,
           top: dt.bbox.y0,
+          originX: "left",
+          originY: "top",
           fontSize: dt.fontSize,
           fill: dt.textColor,
           fontFamily: dt.fontFamily,

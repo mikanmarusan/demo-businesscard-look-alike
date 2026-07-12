@@ -1,5 +1,5 @@
 ---
-name: x-fixing-vulnerability
+name: x-fixing-vulnerabilities
 description: detect & fix npm audit vulns (high+) at repo root; no --force; auto-rollback on lint+build failure
 argument-hint: ""
 allowed-tools: Bash(npm:*), Bash(git:*), Bash(jq:*)

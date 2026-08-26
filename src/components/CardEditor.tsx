@@ -171,11 +171,34 @@ export default function CardEditor({ imageUrl, detectedTexts }: Props) {
 
   // Keyboard shortcut: Delete/Backspace removes selected IText (when not editing)
   useEffect(() => {
+    const isEditableTarget = (target: EventTarget | null): boolean => {
+      if (!(target instanceof HTMLElement)) return false;
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.tagName === "SELECT" ||
+        target.tagName === "BUTTON"
+      )
+        return true;
+      return target.isContentEditable;
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.isComposing) return;
       if (e.key !== "Delete" && e.key !== "Backspace") return;
+      // e.target covers the common bubbled case; the DOM's focused-element fallback
+      // below covers events whose target is not an HTMLElement. During in-canvas
+      // IText editing, Fabric's hidden <textarea> is both, so this also matches
+      // TEXTAREA and returns early here -- the native browser Backspace/Delete then
+      // runs unprevented, the same net effect the pre-existing edit-mode check below
+      // already produced for that case.
+      if (isEditableTarget(e.target)) return;
+      if (isEditableTarget(document.activeElement)) return;
       const canvas = fabricRef.current;
       if (!canvas) return;
       const active = canvas.getActiveObject();
+      // Retained as defence in depth: reachable only when the active object's
+      // editing textarea somehow isn't the DOM's active/target element.
       if (active instanceof fabric.IText && !active.isEditing) {
         e.preventDefault();
         handleDeleteSelected();

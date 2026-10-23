@@ -127,7 +127,6 @@ export default function ImageUploader({ onImageLoaded }: Props) {
             {/* Preview src is always a FileReader data URL, which next/image
                 renders unoptimized anyway — a plain <img> avoids the required
                 width/height constraints for no loss in optimization. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={preview}
               alt="Uploaded business card preview"
